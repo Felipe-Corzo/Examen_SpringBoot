@@ -1,5 +1,6 @@
 package com.logitrack.examen.service;
 
+import com.logitrack.examen.specification.MovimientoSpecification;
 import com.logitrack.model.Auditoria;
 import com.logitrack.model.MovimientoInventario;
 import com.logitrack.model.TipoMovimiento;
@@ -25,21 +26,23 @@ public class ReporteExamenServiceImpl implements ReporteExamenService {
     }
 
     @Override
-    public List<MovimientoInventario> obtenerMovimientos(
-            Long bodegaId,
-            Long productoId,
-            TipoMovimiento tipoMovimiento,
-            LocalDateTime fechaInicio,
-            LocalDateTime fechaFin) {
+public List<MovimientoInventario> obtenerMovimientos(
+        Long bodegaId,
+        Long productoId,
+        TipoMovimiento tipoMovimiento,
+        LocalDateTime fechaInicio,
+        LocalDateTime fechaFin) {
 
-        return movimientoRepository.buscarMovimientosConFiltros(
+    return movimientoRepository.findAll(
+        MovimientoSpecification.filtrar(
                 bodegaId,
                 productoId,
                 tipoMovimiento,
                 fechaInicio,
                 fechaFin
-        );
-    }
+        )
+);
+}
 
     @Override
     public List<Auditoria> obtenerAuditorias(

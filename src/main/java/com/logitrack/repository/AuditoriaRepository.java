@@ -9,8 +9,10 @@ import java.time.LocalDateTime;
 
 import java.util.List;
 
-public interface AuditoriaRepository extends JpaRepository<Auditoria, Long> {
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+public interface AuditoriaRepository extends JpaRepository<Auditoria, Long>,
+        JpaSpecificationExecutor<Auditoria> {
     List<Auditoria> findByEntidadAfectadaIgnoreCase(String entidadAfectada);
 
     List<Auditoria> findByTipoOperacion(TipoOperacion tipoOperacion);
@@ -20,29 +22,20 @@ public interface AuditoriaRepository extends JpaRepository<Auditoria, Long> {
     List<Auditoria> findAllByOrderByFechaHoraDesc();
 
     @Query("""
-                SELECT a
-                FROM Auditoria a
-                WHERE
-                    (:productoId IS NULL OR
-                     a.entidadId = :productoId)
-                AND
-                    (:fechaInicio IS NULL OR
-                     a.fechaHora >= :fechaInicio)
-                AND
-                    (:fechaFin IS NULL OR
-                     a.fechaHora <= :fechaFin)
-                AND
-                    (
-                        :campoModificado IS NULL OR
-                        a.valoresAnteriores LIKE CONCAT('%', :campoModificado, '%')
-            OR
-            a.valoresNuevos LIKE CONCAT('%', :campoModificado, '%')
-                    )
-                ORDER BY a.fechaHora DESC
-            """)
-    List<Auditoria> buscarAuditoriasConFiltros(
-            @Param("productoId") Long productoId,
-            @Param("fechaInicio") LocalDateTime fechaInicio,
-            @Param("fechaFin") LocalDateTime fechaFin,
-            @Param("campoModificado") String campoModificado);
+    SELECT a
+    FROM Auditoria a
+    WHERE
+        (:productoId IS NULL OR a.entidadId = :productoId)
+    AND
+        (:fechaInicio IS NULL OR a.fechaHora >= :fechaInicio)
+    AND
+        (:fechaFin IS NULL OR a.fechaHora <= :fechaFin)
+    ORDER BY a.fechaHora DESC
+""")
+List<Auditoria> buscarAuditoriasConFiltros(
+        @Param("productoId") Long productoId,
+        @Param("fechaInicio") LocalDateTime fechaInicio,
+        @Param("fechaFin") LocalDateTime fechaFin,
+        @Param("campoModificado") String campoModificado
+);
 }

@@ -11,7 +11,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
-public interface MovimientoInventarioRepository extends JpaRepository<MovimientoInventario, Long> {
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+public interface MovimientoInventarioRepository extends JpaRepository<MovimientoInventario, Long>,
+        JpaSpecificationExecutor<MovimientoInventario> {
 
     List<MovimientoInventario> findByTipoMovimiento(TipoMovimiento tipoMovimiento);
 
