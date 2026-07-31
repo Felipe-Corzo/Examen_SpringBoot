@@ -1,12 +1,15 @@
 package com.logitrack.examen.controller;
 
+import com.logitrack.examen.dto.AuditoriaReporteDTO;
+import com.logitrack.examen.dto.MovimientoReporteDTO;
 import com.logitrack.examen.service.ReporteExamenService;
-import com.logitrack.model.Auditoria;
-import com.logitrack.model.MovimientoInventario;
 import com.logitrack.model.TipoMovimiento;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,61 +24,43 @@ public class ReporteExamenController {
         this.reporteExamenService = reporteExamenService;
     }
 
+    /**
+     * GET /api/reportes/movimientos
+     * Devuelve movimientos de inventario filtrados por:
+     * - bodega (opcional)
+     * - producto (opcional)
+     * - tipoMovimiento (opcional: ENTRADA, SALIDA, AJUSTE)
+     * - rango de fechas (fechaInicio, fechaFin, opcional)
+     */
     @GetMapping("/movimientos")
-    public ResponseEntity<List<MovimientoInventario>> obtenerMovimientos(
+    public ResponseEntity<List<MovimientoReporteDTO>> obtenerMovimientos(
+            @RequestParam(required = false) Long bodega,
+            @RequestParam(required = false) Long producto,
+            @RequestParam(required = false) TipoMovimiento tipoMovimiento,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
 
-            @RequestParam(required = false)
-            Long bodegaId,
-
-            @RequestParam(required = false)
-            Long productoId,
-
-            @RequestParam(required = false)
-            TipoMovimiento tipoMovimiento,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime fechaInicio,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime fechaFin) {
-
-        return ResponseEntity.ok(
-                reporteExamenService.obtenerMovimientos(
-                        bodegaId,
-                        productoId,
-                        tipoMovimiento,
-                        fechaInicio,
-                        fechaFin
-                )
-        );
+        List<MovimientoReporteDTO> resultados = reporteExamenService.obtenerMovimientosFiltrados(
+                bodega, producto, tipoMovimiento, fechaInicio, fechaFin);
+        return ResponseEntity.ok(resultados);
     }
 
+    /**
+     * GET /api/reportes/auditoria
+     * Devuelve registros de auditoría filtrados por:
+     * - producto (opcional)
+     * - fechaCambio (rango opcional: fechaInicio, fechaFin)
+     * - campoModificado (opcional)
+     */
     @GetMapping("/auditoria")
-    public ResponseEntity<List<Auditoria>> obtenerAuditorias(
+    public ResponseEntity<List<AuditoriaReporteDTO>> obtenerAuditoria(
+            @RequestParam(required = false) Long producto,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin,
+            @RequestParam(required = false) String campoModificado) {
 
-            @RequestParam(required = false)
-            Long productoId,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime fechaInicio,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime fechaFin,
-
-            @RequestParam(required = false)
-            String campoModificado) {
-
-        return ResponseEntity.ok(
-                reporteExamenService.obtenerAuditorias(
-                        productoId,
-                        fechaInicio,
-                        fechaFin,
-                        campoModificado
-                )
-        );
+        List<AuditoriaReporteDTO> resultados = reporteExamenService.obtenerAuditoriasFiltradas(
+                producto, fechaInicio, fechaFin, campoModificado);
+        return ResponseEntity.ok(resultados);
     }
 }

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes - LogiTrack</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">
+
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="../css/ui-kit.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar__header">
+      <div class="sidebar__logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M3 7L12 12L21 7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M12 12V22" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="sidebar__title">LogiTrack</h1>
+        <span class="sidebar__subtitle">Warehouse Management</span>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__link" href="dashboard.html">
+        <span class="material-symbols-outlined icon-lg">dashboard</span>
+        Dashboard
+      </a>
+      <a class="sidebar__link" href="bodegas.html">
+        <span class="material-symbols-outlined icon-lg">inventory_2</span>
+        Bodegas
+      </a>
+      <a class="sidebar__link" href="productos.html">
+        <span class="material-symbols-outlined icon-lg">package_2</span>
+        Productos
+      </a>
+      <a class="sidebar__link" href="movimientos.html">
+        <span class="material-symbols-outlined icon-lg">swap_horiz</span>
+        Movimientos
+      </a>
+      <a class="sidebar__link is-active" href="reportes.html">
+        <span class="material-symbols-outlined is-filled icon-lg">assessment</span>
+        Reportes
+      </a>
+      <a class="sidebar__link" href="auditoria.html">
+        <span class="material-symbols-outlined icon-lg">history_edu</span>
+        Auditoría
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <a class="sidebar__link" href="#">
+        <span class="material-symbols-outlined icon-md">help</span>
+        Ayuda
+      </a>
+      <a class="sidebar__link" href="#" id="sidebar-settings-btn-reportes">
+        <span class="material-symbols-outlined icon-md">settings</span>
+        Configuración
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar__left">
+        <button class="topbar__menu-btn" type="button" aria-label="Abrir menú">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="breadcrumb">
+          <span class="breadcrumb__root">LogiTrack</span>
+          <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+          <span class="breadcrumb__current">Reportes</span>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <button class="icon-btn" type="button" title="Configuración" aria-label="Configuración">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div class="topbar__divider"></div>
+        <button class="logout-btn" type="button">
+          <span class="material-symbols-outlined icon-sm">logout</span>
+          Cerrar sesión
+        </button>
+        <div class="avatar" title="Usuario">US</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="content__inner">
+
+        <!-- ============================================================== -->
+        <!-- SECCIÓN: REPORTE DE MOVIMIENTOS                                -->
+        <!-- ============================================================== -->
+        <div class="page-toolbar" data-animate style="animation-delay:0ms">
+          <div>
+            <h2 class="content__title">Reporte de Movimientos</h2>
+            <p class="content__subtitle">Consulta movimientos de inventario con filtros combinados.</p>
+          </div>
+          <button class="toolbar-btn toolbar-btn--primary" type="button" id="btn-export-movimientos-csv">
+            <span class="material-symbols-outlined icon-sm">download</span>
+            Exportar CSV
+          </button>
+        </div>
+
+        <!-- Filtros de Movimientos -->
+        <div class="filters-bar form-grid-4" data-animate style="animation-delay:70ms">
+          <div class="form-group">
+            <label class="form-label text-uppercase">Bodega</label>
+            <div class="select-wrapper">
+              <select class="form-select" id="rep-mov-bodega">
+                <option value="">Todas las bodegas</option>
+              </select>
+              <span class="material-symbols-outlined">expand_more</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label text-uppercase">Producto</label>
+            <div class="select-wrapper">
+              <select class="form-select" id="rep-mov-producto">
+                <option value="">Todos los productos</option>
+              </select>
+              <span class="material-symbols-outlined">expand_more</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label text-uppercase">Tipo Movimiento</label>
+            <div class="select-wrapper">
+              <select class="form-select" id="rep-mov-tipo">
+                <option value="">Todos</option>
+                <option value="ENTRADA">ENTRADA</option>
+                <option value="SALIDA">SALIDA</option>
+                <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+              </select>
+              <span class="material-symbols-outlined">expand_more</span>
+            </div>
+          </div>
+          <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+            <div style="flex:1;">
+              <label class="form-label text-uppercase">Fecha Desde</label>
+              <input class="form-input" id="rep-mov-fecha-desde" type="date">
+            </div>
+            <div style="flex:1;">
+              <label class="form-label text-uppercase">Fecha Hasta</label>
+              <input class="form-input" id="rep-mov-fecha-hasta" type="date">
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón de búsqueda -->
+        <div style="display:flex; gap:0.75rem; margin-top:-0.5rem;" data-animate style="animation-delay:100ms">
+          <button class="toolbar-btn toolbar-btn--primary" type="button" id="rep-mov-btn-buscar">
+            <span class="material-symbols-outlined icon-sm">search</span>
+            Buscar
+          </button>
+          <button class="toolbar-btn toolbar-btn--outline" type="button" id="rep-mov-btn-limpiar">
+            <span class="material-symbols-outlined icon-sm">clear</span>
+            Limpiar filtros
+          </button>
+        </div>
+
+        <!-- Tabla de resultados de movimientos -->
+        <div class="table-card" data-animate style="animation-delay:140ms">
+          <div class="table-card__header flex-between">
+            <h3 class="panel__title">Resultados de Movimientos</h3>
+            <span id="rep-mov-total-registros" style="font-size:0.875rem;color:var(--color-secondary);">0 registros</span>
+          </div>
+          <div class="table-card__scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Usuario</th>
+                  <th>Bodega Origen</th>
+                  <th>Bodega Destino</th>
+                  <th class="is-right">Productos</th>
+                  <th class="is-right">Valor Total</th>
+                </tr>
+              </thead>
+              <tbody id="rep-mov-tbody">
+                <tr><td colspan="8" class="is-center cell-muted" style="padding:2rem;">Aplica filtros y presiona "Buscar" para consultar movimientos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="rep-mov-pagination" style="display:none;">
+            <span class="pagination__info" id="rep-mov-pagination-info">Cargando...</span>
+            <div class="pagination__controls" id="rep-mov-pagination-controls">
+              <button class="pagination__btn" type="button" id="rep-mov-prev-btn" disabled><span class="material-symbols-outlined icon-sm">chevron_left</span></button>
+              <div id="rep-mov-page-numbers" style="display:flex;align-items:center;gap:0.25rem;"></div>
+              <button class="pagination__btn" type="button" id="rep-mov-next-btn" disabled><span class="material-symbols-outlined icon-sm">chevron_right</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Separador -->
+        <hr style="border:none;border-top:1px solid var(--color-outline-variant);margin:1.5rem 0;">
+
+        <!-- ============================================================== -->
+        <!-- SECCIÓN: REPORTE DE AUDITORÍA                                  -->
+        <!-- ============================================================== -->
+        <div class="page-toolbar" data-animate style="animation-delay:0ms">
+          <div>
+            <h2 class="content__title">Reporte de Auditoría</h2>
+            <p class="content__subtitle">Consulta registros de auditoría con filtros avanzados.</p>
+          </div>
+          <button class="toolbar-btn toolbar-btn--primary" type="button" id="btn-export-auditoria-csv">
+            <span class="material-symbols-outlined icon-sm">download</span>
+            Exportar CSV
+          </button>
+        </div>
+
+        <!-- Filtros de Auditoría -->
+        <div class="filters-bar form-grid-4" data-animate style="animation-delay:70ms">
+          <div class="form-group">
+            <label class="form-label text-uppercase">Producto / Entidad ID</label>
+            <input class="form-input" id="rep-aud-producto" type="number" min="1" placeholder="ID del producto...">
+          </div>
+          <div class="form-group">
+            <label class="form-label text-uppercase">Campo Modificado</label>
+            <input class="form-input" id="rep-aud-campo" type="text" placeholder="Ej: stock, precio, nombre...">
+          </div>
+          <div class="form-group">
+            <label class="form-label text-uppercase">Fecha Desde</label>
+            <input class="form-input" id="rep-aud-fecha-desde" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label text-uppercase">Fecha Hasta</label>
+            <input class="form-input" id="rep-aud-fecha-hasta" type="date">
+          </div>
+        </div>
+
+        <!-- Botón de búsqueda auditoría -->
+        <div style="display:flex; gap:0.75rem; margin-top:-0.5rem;" data-animate style="animation-delay:100ms">
+          <button class="toolbar-btn toolbar-btn--primary" type="button" id="rep-aud-btn-buscar">
+            <span class="material-symbols-outlined icon-sm">search</span>
+            Buscar
+          </button>
+          <button class="toolbar-btn toolbar-btn--outline" type="button" id="rep-aud-btn-limpiar">
+            <span class="material-symbols-outlined icon-sm">clear</span>
+            Limpiar filtros
+          </button>
+        </div>
+
+        <!-- Tabla de resultados de auditoría -->
+        <div class="table-card" data-animate style="animation-delay:140ms">
+          <div class="table-card__header flex-between">
+            <h3 class="panel__title">Resultados de Auditoría</h3>
+            <span id="rep-aud-total-registros" style="font-size:0.875rem;color:var(--color-secondary);">0 registros</span>
+          </div>
+          <div class="table-card__scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Operación</th>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                  <th>Entidad</th>
+                  <th>Entidad ID</th>
+                  <th>Campo Modificado</th>
+                  <th class="is-right">Valores</th>
+                </tr>
+              </thead>
+              <tbody id="rep-aud-tbody">
+                <tr><td colspan="7" class="is-center cell-muted" style="padding:2rem;">Aplica filtros y presiona "Buscar" para consultar auditorías.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="rep-aud-pagination" style="display:none;">
+            <span class="pagination__info" id="rep-aud-pagination-info">Cargando...</span>
+            <div class="pagination__controls" id="rep-aud-pagination-controls">
+              <button class="pagination__btn" type="button" id="rep-aud-prev-btn" disabled><span class="material-symbols-outlined icon-sm">chevron_left</span></button>
+              <div id="rep-aud-page-numbers" style="display:flex;align-items:center;gap:0.25rem;"></div>
+              <button class="pagination__btn" type="button" id="rep-aud-next-btn" disabled><span class="material-symbols-outlined icon-sm">chevron_right</span></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <nav class="mobile-nav">
+    <a class="mobile-nav__link" href="dashboard.html">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span class="mobile-nav__label">Dashboard</span>
+    </a>
+    <a class="mobile-nav__link" href="bodegas.html">
+      <span class="material-symbols-outlined">inventory_2</span>
+      <span class="mobile-nav__label">Bodegas</span>
+    </a>
+    <a class="mobile-nav__link" href="productos.html">
+      <span class="material-symbols-outlined">package_2</span>
+      <span class="mobile-nav__label">Productos</span>
+    </a>
+    <a class="mobile-nav__link" href="movimientos.html">
+      <span class="material-symbols-outlined">swap_horiz</span>
+      <span class="mobile-nav__label">Movimientos</span>
+    </a>
+    <a class="mobile-nav__link is-active" href="reportes.html">
+      <span class="material-symbols-outlined is-filled">assessment</span>
+      <span class="mobile-nav__label">Reportes</span>
+    </a>
+  </nav>
+
+  <div class="mobile-overlay"></div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/ui-kit.js"></script>    
+<script src="../js/script.js"></script>
+</body>
+</html>
+

@@ -37,6 +37,9 @@ public class Auditoria {
     @Column(name = "entidad_id")
     private Long entidadId;
 
+    @Column(name = "campo_modificado", length = 100)
+    private String campoModificado;
+
     @Column(name = "valores_anteriores", columnDefinition = "TEXT")
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private String valoresAnteriores;

@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initModalDismissButtons();
   initGlobalHeaderEvents();
   initRegistroEmpleadoModal();
+  initReportesPage();
 });
 
 function initGlobalHeaderEvents() {
@@ -1886,3 +1887,315 @@ function initRegistroEmpleadoModal() {
 }
 
 document.addEventListener('DOMContentLoaded', cargarAuditorias);
+
+/* ============================================================================
+   Reportes (Página de reportes con filtros desde el backend)
+   ============================================================================ */
+let reportesState = {
+  movimientos: [],
+  movPaginacion: null,
+  auditorias: [],
+  audPaginacion: null
+};
+
+async function initReportesPage() {
+  const tbodyMov = document.getElementById('rep-mov-tbody');
+  const tbodyAud = document.getElementById('rep-aud-tbody');
+  if (!tbodyMov && !tbodyAud) return; // no estamos en reportes.html
+  protegerRuta();
+
+  // Cargar selects de bodegas y productos
+  await Promise.all([
+    cargarSelectBodegasReportes(),
+    cargarSelectProductosReportes()
+  ]);
+
+  // Eventos de búsqueda
+  document.getElementById('rep-mov-btn-buscar')?.addEventListener('click', buscarMovimientosReporte);
+  document.getElementById('rep-mov-btn-limpiar')?.addEventListener('click', limpiarFiltrosMovimientos);
+  document.getElementById('rep-aud-btn-buscar')?.addEventListener('click', buscarAuditoriasReporte);
+  document.getElementById('rep-aud-btn-limpiar')?.addEventListener('click', limpiarFiltrosAuditoria);
+
+  // Exportar CSV
+  document.getElementById('btn-export-movimientos-csv')?.addEventListener('click', exportarMovimientosCSV);
+  document.getElementById('btn-export-auditoria-csv')?.addEventListener('click', exportarAuditoriaCSV);
+}
+
+async function cargarSelectBodegasReportes() {
+  const select = document.getElementById('rep-mov-bodega');
+  if (!select) return;
+  try {
+    const bodegas = await apiFetch('/api/bodegas');
+    select.innerHTML = '<option value="">Todas las bodegas</option>' +
+      bodegas.map((b) => `<option value="${b.id}">${b.nombre}</option>`).join('');
+  } catch (err) {
+    console.error('Error cargando bodegas:', err);
+  }
+}
+
+async function cargarSelectProductosReportes() {
+  const select = document.getElementById('rep-mov-producto');
+  if (!select) return;
+  try {
+    const productos = await apiFetch('/api/productos');
+    select.innerHTML = '<option value="">Todos los productos</option>' +
+      productos.map((p) => `<option value="${p.id}">${p.nombre}</option>`).join('');
+  } catch (err) {
+    console.error('Error cargando productos:', err);
+  }
+}
+
+function construirQueryMovimientos() {
+  const bodega = document.getElementById('rep-mov-bodega')?.value || '';
+  const producto = document.getElementById('rep-mov-producto')?.value || '';
+  const tipo = document.getElementById('rep-mov-tipo')?.value || '';
+  const fechaDesde = document.getElementById('rep-mov-fecha-desde')?.value || '';
+  const fechaHasta = document.getElementById('rep-mov-fecha-hasta')?.value || '';
+
+  const params = new URLSearchParams();
+  if (bodega) params.set('bodega', bodega);
+  if (producto) params.set('producto', producto);
+  if (tipo) params.set('tipoMovimiento', tipo);
+  if (fechaDesde) params.set('fechaInicio', `${fechaDesde}T00:00:00`);
+  if (fechaHasta) params.set('fechaFin', `${fechaHasta}T23:59:59`);
+
+  return params.toString();
+}
+
+async function buscarMovimientosReporte() {
+  const tbody = document.getElementById('rep-mov-tbody');
+  const totalSpan = document.getElementById('rep-mov-total-registros');
+  const pagination = document.getElementById('rep-mov-pagination');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="8" class="is-center cell-muted" style="padding:2rem;">Consultando...</td></tr>';
+
+  try {
+    const query = construirQueryMovimientos();
+    const url = `/api/reportes/movimientos${query ? '?' + query : ''}`;
+    reportesState.movimientos = await apiFetch(url);
+
+    if (!Array.isArray(reportesState.movimientos) || reportesState.movimientos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="is-center cell-muted" style="padding:2rem;">No se encontraron movimientos con los filtros seleccionados.</td></tr>';
+      if (totalSpan) totalSpan.textContent = '0 registros';
+      if (pagination) pagination.style.display = 'none';
+      return;
+    }
+
+    if (totalSpan) totalSpan.textContent = `${reportesState.movimientos.length} registros`;
+    if (pagination) pagination.style.display = '';
+
+    reportesState.movPaginacion = initPaginacion({
+      data: reportesState.movimientos,
+      pageSize: 5,
+      renderFn: (slice) => renderMovimientosReporte(slice),
+      infoId: 'rep-mov-pagination-info',
+      prevBtnId: 'rep-mov-prev-btn',
+      nextBtnId: 'rep-mov-next-btn',
+      pageNumbersId: 'rep-mov-page-numbers',
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="is-center cell-muted" style="padding:2rem;">Error: ${err.message}</td></tr>`;
+    UIKit.toast('Error al consultar movimientos: ' + err.message, 'error');
+  }
+}
+
+function renderMovimientosReporte(movimientos) {
+  const tbody = document.getElementById('rep-mov-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = movimientos.map((m) => {
+    const totalProductos = (m.detalles || []).reduce((acc, d) => acc + (d.cantidad || 0), 0);
+    const valorTotal = (m.detalles || []).reduce((acc, d) => acc + (d.subtotal || 0), 0);
+
+    return `
+    <tr>
+      <td class="metric-cell__value">#${m.id}</td>
+      <td class="cell-muted">${new Date(m.fecha).toLocaleString('es-CO')}</td>
+      <td><span class="status-badge ${badgeClasePorTipo(m.tipoMovimiento)}">${m.tipoMovimiento}</span></td>
+      <td>${m.usuarioNombre || '-'}</td>
+      <td class="product-cell__name">${m.bodegaOrigenNombre || '-'}</td>
+      <td class="product-cell__name">${m.bodegaDestinoNombre || '-'}</td>
+      <td class="is-right"><span class="metric-cell__value">${totalProductos}</span></td>
+      <td class="is-right"><span class="metric-cell__value">$${valorTotal.toFixed(2)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function limpiarFiltrosMovimientos() {
+  document.getElementById('rep-mov-bodega').value = '';
+  document.getElementById('rep-mov-producto').value = '';
+  document.getElementById('rep-mov-tipo').value = '';
+  document.getElementById('rep-mov-fecha-desde').value = '';
+  document.getElementById('rep-mov-fecha-hasta').value = '';
+
+  const tbody = document.getElementById('rep-mov-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="is-center cell-muted" style="padding:2rem;">Aplica filtros y presiona "Buscar" para consultar movimientos.</td></tr>';
+  document.getElementById('rep-mov-total-registros').textContent = '0 registros';
+  document.getElementById('rep-mov-pagination').style.display = 'none';
+  reportesState.movimientos = [];
+}
+
+function construirQueryAuditoria() {
+  const producto = document.getElementById('rep-aud-producto')?.value || '';
+  const campo = document.getElementById('rep-aud-campo')?.value || '';
+  const fechaDesde = document.getElementById('rep-aud-fecha-desde')?.value || '';
+  const fechaHasta = document.getElementById('rep-aud-fecha-hasta')?.value || '';
+
+  const params = new URLSearchParams();
+  if (producto) params.set('producto', producto);
+  if (campo) params.set('campoModificado', campo.trim());
+  if (fechaDesde) params.set('fechaInicio', `${fechaDesde}T00:00:00`);
+  if (fechaHasta) params.set('fechaFin', `${fechaHasta}T23:59:59`);
+
+  return params.toString();
+}
+
+async function buscarAuditoriasReporte() {
+  const tbody = document.getElementById('rep-aud-tbody');
+  const totalSpan = document.getElementById('rep-aud-total-registros');
+  const pagination = document.getElementById('rep-aud-pagination');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" class="is-center cell-muted" style="padding:2rem;">Consultando...</td></tr>';
+
+  try {
+    const query = construirQueryAuditoria();
+    const url = `/api/reportes/auditoria${query ? '?' + query : ''}`;
+    reportesState.auditorias = await apiFetch(url);
+
+    if (!Array.isArray(reportesState.auditorias) || reportesState.auditorias.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="is-center cell-muted" style="padding:2rem;">No se encontraron auditorías con los filtros seleccionados.</td></tr>';
+      if (totalSpan) totalSpan.textContent = '0 registros';
+      if (pagination) pagination.style.display = 'none';
+      return;
+    }
+
+    if (totalSpan) totalSpan.textContent = `${reportesState.auditorias.length} registros`;
+    if (pagination) pagination.style.display = '';
+
+    reportesState.audPaginacion = initPaginacion({
+      data: reportesState.auditorias,
+      pageSize: 5,
+      renderFn: (slice) => renderAuditoriasReporte(slice),
+      infoId: 'rep-aud-pagination-info',
+      prevBtnId: 'rep-aud-prev-btn',
+      nextBtnId: 'rep-aud-next-btn',
+      pageNumbersId: 'rep-aud-page-numbers',
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="is-center cell-muted" style="padding:2rem;">Error: ${err.message}</td></tr>`;
+    UIKit.toast('Error al consultar auditorías: ' + err.message, 'error');
+  }
+}
+
+function renderAuditoriasReporte(auditorias) {
+  const tbody = document.getElementById('rep-aud-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = auditorias.map((a) => {
+    // Mostrar resumen de valores
+    let valoresResumen = '-';
+    if (a.valoresNuevos) {
+      try {
+        const parsed = JSON.parse(a.valoresNuevos);
+        if (typeof parsed === 'object') {
+          const entries = Object.entries(parsed).filter(([k]) => !k.startsWith('@'));
+          valoresResumen = entries.slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(', ');
+          if (entries.length > 2) valoresResumen += '...';
+        } else {
+          valoresResumen = String(parsed).substring(0, 50);
+        }
+      } catch { valoresResumen = String(a.valoresNuevos).substring(0, 50); }
+    }
+
+    return `
+    <tr>
+      <td><span class="status-badge ${badgeClasePorOperacion(a.tipoOperacion)}">${a.tipoOperacion}</span></td>
+      <td class="cell-mono">${new Date(a.fechaHora).toLocaleString('es-CO')}</td>
+      <td>${a.usuarioNombre || 'Sistema'}</td>
+      <td class="product-cell__name">${a.entidadAfectada}</td>
+      <td class="metric-cell__value">${a.entidadId ?? '-'}</td>
+      <td>${a.campoModificado || '-'}</td>
+      <td class="is-right"><span class="cell-mono" style="font-size:12px;">${valoresResumen}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function limpiarFiltrosAuditoria() {
+  document.getElementById('rep-aud-producto').value = '';
+  document.getElementById('rep-aud-campo').value = '';
+  document.getElementById('rep-aud-fecha-desde').value = '';
+  document.getElementById('rep-aud-fecha-hasta').value = '';
+
+  const tbody = document.getElementById('rep-aud-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="is-center cell-muted" style="padding:2rem;">Aplica filtros y presiona "Buscar" para consultar auditorías.</td></tr>';
+  document.getElementById('rep-aud-total-registros').textContent = '0 registros';
+  document.getElementById('rep-aud-pagination').style.display = 'none';
+  reportesState.auditorias = [];
+}
+
+function exportarMovimientosCSV() {
+  const data = reportesState.movimientos;
+  if (!data || data.length === 0) {
+    UIKit.toast('No hay datos para exportar. Realiza una búsqueda primero.', 'warning');
+    return;
+  }
+
+  const headers = ['ID', 'Fecha', 'Tipo', 'Usuario', 'Bodega Origen', 'Bodega Destino', 'Productos', 'Valor Total'];
+  const rows = data.map((m) => {
+    const totalProductos = (m.detalles || []).reduce((acc, d) => acc + (d.cantidad || 0), 0);
+    const valorTotal = (m.detalles || []).reduce((acc, d) => acc + (d.subtotal || 0), 0);
+    return [
+      m.id,
+      m.fecha,
+      m.tipoMovimiento,
+      m.usuarioNombre || '',
+      m.bodegaOrigenNombre || '',
+      m.bodegaDestinoNombre || '',
+      totalProductos,
+      valorTotal.toFixed(2)
+    ];
+  });
+
+  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' +
+    [headers.join(','), ...rows.map((e) => e.map(v => `"${v}"`).join(','))].join('\n');
+
+  const link = document.createElement('a');
+  link.setAttribute('href', encodeURI(csvContent));
+  link.setAttribute('download', `reporte_movimientos_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  UIKit.toast('CSV exportado correctamente.', 'success');
+}
+
+function exportarAuditoriaCSV() {
+  const data = reportesState.auditorias;
+  if (!data || data.length === 0) {
+    UIKit.toast('No hay datos para exportar. Realiza una búsqueda primero.', 'warning');
+    return;
+  }
+
+  const headers = ['ID', 'Operación', 'Fecha', 'Usuario', 'Entidad', 'EntidadID', 'Campo Modificado'];
+  const rows = data.map((a) => [
+    a.id,
+    a.tipoOperacion,
+    a.fechaHora,
+    a.usuarioNombre || 'Sistema',
+    a.entidadAfectada,
+    a.entidadId || '',
+    a.campoModificado || ''
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' +
+    [headers.join(','), ...rows.map((e) => e.map(v => `"${v}"`).join(','))].join('\n');
+
+  const link = document.createElement('a');
+  link.setAttribute('href', encodeURI(csvContent));
+  link.setAttribute('download', `reporte_auditoria_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  UIKit.toast('CSV exportado correctamente.', 'success');
+}

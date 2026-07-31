@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS auditorias (
     usuario_id BIGINT,
     entidad_afectada VARCHAR(50) NOT NULL,
     entidad_id BIGINT,
+    campo_modificado VARCHAR(100),
     valores_anteriores TEXT,
     valores_nuevos TEXT,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
